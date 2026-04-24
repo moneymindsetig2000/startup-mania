@@ -105,8 +105,8 @@ export function ChatPage() {
         </div>
 
         <div className="flex flex-1 gap-2 flex-col lg:flex-row overflow-hidden">
-          <aside className={`transition-all duration-300 ease-in-out overflow-hidden rounded-[12px] border border-white/10 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_24px_80px_rgba(0,0,0,0.45)] ${isCollapsed ? "w-0 opacity-0 border-none" : "w-full lg:w-[280px] opacity-100"}`} />
-          <main className="flex-1 rounded-[12px] border border-white/10 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_24px_80px_rgba(0,0,0,0.45)]" />
+          <aside className={`transition-[width,opacity] will-change-[width,opacity] [contain:paint] duration-300 ease-in-out overflow-hidden rounded-[12px] border border-white/10 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_24px_80px_rgba(0,0,0,0.45)] ${isCollapsed ? "w-0 opacity-0" : "w-full lg:w-[280px] opacity-100"}`} />
+          <main className="flex-1 [contain:paint] rounded-[12px] border border-white/10 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.02),0_24px_80px_rgba(0,0,0,0.45)]" />
         </div>
       </div>
     </div>
