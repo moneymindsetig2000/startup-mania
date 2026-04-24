@@ -89,14 +89,14 @@ export function ChatPage() {
               <button
                 type="button"
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="group flex h-7 w-7 items-center justify-center transition-all duration-300"
+                className="group flex h-8 w-8 items-center justify-center transition-all duration-300"
                 aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
               >
                 <span className="text-white transition-transform duration-300 group-hover:scale-105">
                   {isCollapsed ? (
-                    <PanelLeftOpen className="h-4 w-4" />
+                    <PanelLeftOpen className="h-5 w-5" />
                   ) : (
-                    <PanelLeftClose className="h-4 w-4" />
+                    <PanelLeftClose className="h-5 w-5" />
                   )}
                 </span>
               </button>
