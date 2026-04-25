@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
+import { supabase } from "@/lib/supabase";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -11,7 +12,8 @@ import {
     CircleUserRound,
     ArrowUpIcon,
     Paperclip,
-    PlusIcon,
+    Sparkles,
+    Loader2
 } from "lucide-react";
 
 interface UseAutoResizeTextareaProps {
@@ -143,19 +145,50 @@ export function VercelV0Chat() {
     
     const placeholderText = useTypewriter(prompts, 40, 1500);
     const [value, setValue] = useState("");
+    const [isEnhancing, setIsEnhancing] = useState(false);
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
         minHeight: 60,
         maxHeight: 200,
     });
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             if (value.trim()) {
-                setValue("");
-                adjustHeight(true);
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    window.location.href = `/chat?prompt=${encodeURIComponent(value.trim())}`;
+                } else {
+                    // Save to local storage and redirect to auth
+                    localStorage.setItem("pending_prompt", value.trim());
+                    window.location.href = "/auth";
+                }
             }
         }
+    };
+
+    const handleSend = async () => {
+        if (value.trim()) {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (session) {
+                window.location.href = `/chat?prompt=${encodeURIComponent(value.trim())}`;
+            } else {
+                // Save to local storage and redirect to auth
+                localStorage.setItem("pending_prompt", value.trim());
+                window.location.href = "/auth";
+            }
+        }
+    };
+
+    const handleEnhance = async () => {
+        if (!value.trim() || isEnhancing) return;
+        setIsEnhancing(true);
+        // Mocking AI enhancement delay
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        setValue(prev => `Act as a senior startup consultant and ${prev}. Focus on scalability, market positioning, and technical feasibility. Provide a structured execution roadmap.`);
+        setIsEnhancing(false);
     };
 
     return (
@@ -208,13 +241,25 @@ export function VercelV0Chat() {
                         <div className="flex items-center gap-2">
                             <button
                                 type="button"
-                                className="px-2 py-1 rounded-lg text-sm text-zinc-400 transition-colors border border-dashed border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800 flex items-center justify-between gap-1"
+                                onClick={handleEnhance}
+                                disabled={!value.trim() || isEnhancing}
+                                className={cn(
+                                    "px-2 py-1 rounded-lg text-sm transition-all border flex items-center justify-between gap-1.5",
+                                    value.trim() && !isEnhancing
+                                        ? "border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800 text-zinc-400 hover:text-white"
+                                        : "border-zinc-800 text-zinc-600 cursor-not-allowed"
+                                )}
                             >
-                                <PlusIcon className="w-4 h-4" />
-                                Project
+                                {isEnhancing ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <Sparkles className="w-4 h-4" />
+                                )}
+                                <span className="text-xs">Enhance</span>
                             </button>
                             <button
                                 type="button"
+                                onClick={handleSend}
                                 className={cn(
                                     "px-1.5 py-1.5 rounded-lg text-sm transition-colors border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800 flex items-center justify-between gap-1",
                                     value.trim()

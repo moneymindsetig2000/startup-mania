@@ -1,13 +1,29 @@
-import { memo } from "react";
+import { memo, useEffect, useRef } from "react";
+import { ChatMessage } from "./ChatMessage";
+
+export interface Message {
+  role: "user" | "assistant";
+  content: string;
+  id: string;
+}
 
 interface AgentColumnProps {
   name: string;
   isActive: boolean;
   index: number;
   onToggle: (index: number) => void;
+  messages: Message[];
 }
 
-export const AgentColumn = memo(function AgentColumn({ name, isActive, index, onToggle }: AgentColumnProps) {
+export const AgentColumn = memo(function AgentColumn({ name, isActive, index, onToggle, messages }: AgentColumnProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   return (
     <div 
       className={`flex-1 min-w-[350px] flex flex-col relative group transition-all duration-500 ${
@@ -30,9 +46,20 @@ export const AgentColumn = memo(function AgentColumn({ name, isActive, index, on
           />
         </button>
       </div>
-      <div className="flex-1 p-1 flex flex-col gap-4">
-        <div className="flex-1 rounded-[4px] border border-dashed border-white/5 bg-white/[0.01]" />
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-4 scroll-smooth"
+      >
+        {messages.map((msg) => (
+          <ChatMessage 
+            key={msg.id} 
+            role={msg.role} 
+            content={msg.content} 
+            name={name}
+          />
+        ))}
       </div>
     </div>
   );
 });
+

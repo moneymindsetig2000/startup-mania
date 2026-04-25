@@ -1,6 +1,4 @@
-"use client";
-
-import { useRef, useCallback, useState, useEffect } from "react";
+import { useRef, useCallback, useState, useEffect, memo } from "react";
 import { Paperclip, ArrowUp, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +6,7 @@ interface ChatInputProps {
   onSend?: (value: string) => void;
 }
 
-export function ChatInput({ onSend }: ChatInputProps) {
+export const ChatInput = memo(function ChatInput({ onSend }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -106,4 +104,5 @@ export function ChatInput({ onSend }: ChatInputProps) {
       </div>
     </div>
   );
-}
+});
+

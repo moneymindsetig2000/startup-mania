@@ -1,9 +1,14 @@
 import { Header } from "@/components/layout/Header"
 import { Hero } from "@/components/layout/Hero"
 import { ChatPage } from "@/pages/chat/ChatPage"
+import { AuthPage } from "@/pages/auth/AuthPage"
 
 function App() {
-  const isChatPage = window.location.pathname === "/chat"
+  const path = window.location.pathname
+  const isChatPage = path === "/chat"
+  const isAuthPage = path === "/auth"
+
+  if (isAuthPage) return <AuthPage />
 
   return (
     isChatPage ? <ChatPage /> : (
