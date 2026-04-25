@@ -2,12 +2,16 @@ import { ChevronDown, LayoutDashboard, Rocket, PanelLeftClose, PanelLeftOpen } f
 import { useEffect, useRef, useState, useCallback } from "react"
 import { ShaderAnimation } from "@/components/ui/shader-animation"
 import { SidebarContent } from "@/components/layout/chat/SidebarContent"
+import { ChatInput } from "@/components/chat/ChatInput"
+import { AgentColumn } from "@/components/chat/AgentColumn"
 
 export function ChatPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [sidebarWidth, setSidebarWidth] = useState(280)
   const [isResizing, setIsResizing] = useState(false)
+  const [activeAgents, setActiveAgents] = useState([true, true, true, true, true])
+  const agentNames = ["ChatGPT", "Gemini", "Claude", "Grok", "GLM"]
   const menuRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -37,12 +41,20 @@ export function ChatPage() {
     setIsResizing(true)
   }, [])
 
+  const toggleAgent = useCallback((index: number) => {
+    setActiveAgents(prev => {
+      const next = [...prev]
+      next[index] = !next[index]
+      return next
+    })
+  }, [])
+
   useEffect(() => {
     let rafId: number
 
     const handlePointerMove = (e: PointerEvent) => {
       if (!isResizing) return
-      
+
       rafId = requestAnimationFrame(() => {
         // Adjust for the 4px padding/offset from the screen edge
         const newWidth = Math.min(Math.max(200, e.clientX - 4), 500)
@@ -112,11 +124,10 @@ export function ChatPage() {
                 <div
                   role="menu"
                   aria-hidden={!isMenuOpen}
-                  className={`absolute left-0 top-[calc(100%+0.6rem)] z-20 w-[176px] overflow-hidden rounded-[14px] border border-white/10 bg-[#0d0d0d]/95 p-1 shadow-[0_14px_36px_rgba(0,0,0,0.38)] backdrop-blur-xl transition-all duration-300 ease-out ${
-                    isMenuOpen
+                  className={`absolute left-0 top-[calc(100%+0.6rem)] z-20 w-[176px] overflow-hidden rounded-[14px] border border-white/10 bg-[#0d0d0d]/95 p-1 shadow-[0_14px_36px_rgba(0,0,0,0.38)] backdrop-blur-xl transition-all duration-300 ease-out ${isMenuOpen
                       ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
                       : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0"
-                  }`}
+                    }`}
                 >
                   <button
                     type="button"
@@ -154,15 +165,15 @@ export function ChatPage() {
         </div>
 
         <div className={`flex flex-1 flex-col lg:flex-row overflow-hidden transition-[gap] duration-300 ${isCollapsed ? "gap-0" : "gap-1 lg:gap-0"}`}>
-          <aside 
-            style={{ 
+          <aside
+            style={{
               width: isCollapsed ? 0 : (typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : '100%')
             }}
-            className={`will-change-[width,opacity] [contain:paint] ease-in-out overflow-hidden rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${isCollapsed ? "opacity-0" : "opacity-100"} ${isResizing ? "" : "transition-[width,opacity] duration-300"}`} 
+            className={`will-change-[width,opacity] [contain:layout_paint] ease-in-out overflow-hidden rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${isCollapsed ? "opacity-0" : "opacity-100"} ${isResizing ? "" : "transition-[width,opacity] duration-300"}`}
           >
             <SidebarContent />
           </aside>
-          
+
           {!isCollapsed && (
             <div
               onPointerDown={startResizing}
@@ -172,19 +183,24 @@ export function ChatPage() {
             </div>
           )}
 
-          <main className="flex-1 flex flex-col [contain:paint] rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden">
-            <div className="flex flex-1 overflow-x-auto divide-x divide-white/10 custom-scrollbar">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="flex-1 min-w-[350px] flex flex-col relative group">
-                  <div className="h-10 flex items-center justify-between px-4 border-b border-white/5 bg-white/[0.02]">
-                    <span className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">Agent 0{i}</span>
-                    <div className="h-1.5 w-1.5 rounded-full bg-white/10" />
-                  </div>
-                  <div className="flex-1 p-1 flex flex-col gap-4">
-                    <div className="flex-1 rounded-[4px] border border-dashed border-white/5 bg-white/[0.01]" />
-                  </div>
-                </div>
+          <main className="flex-1 flex flex-col [contain:layout_paint] rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden relative">
+            <div className="flex flex-1 overflow-x-auto divide-x divide-white/10 custom-scrollbar pb-24">
+              {activeAgents.map((isActive, index) => (
+                <AgentColumn
+                  key={index}
+                  name={agentNames[index]}
+                  index={index}
+                  isActive={isActive}
+                  onToggle={toggleAgent}
+                />
               ))}
+            </div>
+
+            <div className="absolute bottom-0 left-0 right-0 z-20 pointer-events-none">
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0d] via-[#0d0d0d]/80 to-transparent h-40 pointer-events-none" />
+              <div className="relative pointer-events-auto">
+                <ChatInput onSend={(val) => console.log("Sending:", val)} />
+              </div>
             </div>
           </main>
         </div>

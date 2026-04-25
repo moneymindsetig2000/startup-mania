@@ -1,0 +1,38 @@
+import { memo } from "react";
+
+interface AgentColumnProps {
+  name: string;
+  isActive: boolean;
+  index: number;
+  onToggle: (index: number) => void;
+}
+
+export const AgentColumn = memo(function AgentColumn({ name, isActive, index, onToggle }: AgentColumnProps) {
+  return (
+    <div 
+      className={`flex-1 min-w-[350px] flex flex-col relative group transition-all duration-500 ${
+        !isActive ? "brightness-[0.4] grayscale-[0.2]" : "brightness-100"
+      }`}
+    >
+      <div className="h-10 flex items-center justify-between px-4 border-b border-white/5 bg-white/[0.02]">
+        <span className="text-[0.6rem] font-black text-white/40 uppercase tracking-widest">{name}</span>
+        <button
+          type="button"
+          onClick={() => onToggle(index)}
+          className={`relative flex h-3.5 w-7 items-center rounded-full transition-all duration-300 ${
+            isActive ? "bg-white/20" : "bg-white/5"
+          }`}
+        >
+          <div
+            className={`h-2.5 w-2.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)] transition-all duration-300 ${
+              isActive ? "translate-x-4" : "translate-x-0.5"
+            }`}
+          />
+        </button>
+      </div>
+      <div className="flex-1 p-1 flex flex-col gap-4">
+        <div className="flex-1 rounded-[4px] border border-dashed border-white/5 bg-white/[0.01]" />
+      </div>
+    </div>
+  );
+});
