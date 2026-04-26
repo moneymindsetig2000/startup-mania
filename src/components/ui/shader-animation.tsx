@@ -16,7 +16,7 @@ const BG_COLOR = 0x0a0a0a
 // The shader is an abstract blur effect so the visual difference is negligible.
 const MAX_PIXEL_RATIO = 1.0
 
-export const ShaderAnimation = memo(function ShaderAnimation() {
+export const ShaderAnimation = memo(function ShaderAnimation({ blur = false }: { blur?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -107,7 +107,10 @@ export const ShaderAnimation = memo(function ShaderAnimation() {
     // Keep autoClear enabled — the clear is cheap and prevents stale-buffer
     // compositing artefacts that accumulate over long sessions on macOS.
     renderer.autoClear = true
-    renderer.setPixelRatio(MAX_PIXEL_RATIO)
+    
+    // As requested: Use the lowest resolution trick to create a little bit of blur
+    // 0.35 provides a soft bilinear blur without completely destroying the quality like 0.15 did
+    renderer.setPixelRatio(blur ? 0.35 : MAX_PIXEL_RATIO)
     renderer.setClearColor(BG_COLOR, 1)
 
     container.appendChild(renderer.domElement)

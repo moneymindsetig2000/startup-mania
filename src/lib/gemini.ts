@@ -54,14 +54,20 @@ ${input}`,
 
 /**
  * Generates a full UI design response from a specific agent.
- * Uses gemini-3-flash-preview for high-integrity architectural thinking.
+ * Uses gemma-4-31b-it for high-integrity architectural thinking.
  */
 export async function generateAgentResponse(
   _agentName: string,
   userPrompt: string,
   onChunk: (text: string) => void
 ) {
-  const model = 'gemini-3-flash-preview';
+  const model = 'gemma-4-31b-it';
+  const tools = [
+    {
+      googleSearch: {
+      }
+    },
+  ];
   const contents = [
     {
       role: 'user',
@@ -81,12 +87,27 @@ export async function generateAgentResponse(
         thinkingConfig: {
           thinkingLevel: HIGH_THINKING as any,
         },
+        tools,
+        maxOutputTokens: 32000,
       },
       contents,
     });
 
     for await (const chunk of response) {
-      if (chunk.text) {
+      // Extract thinking and text from the response parts
+      const parts = (chunk as any).candidates?.[0]?.content?.parts;
+      if (parts && Array.isArray(parts)) {
+        for (const part of parts) {
+          if (part.thought && part.text) {
+            // This is a thinking/reasoning part
+            onChunk(`<thought>${part.text}</thought>`);
+          } else if (part.text && !part.thought) {
+            // This is a regular text part
+            onChunk(part.text);
+          }
+        }
+      } else if (chunk.text) {
+        // Fallback for models that don't use parts structure
         onChunk(chunk.text);
       }
     }
@@ -95,3 +116,4 @@ export async function generateAgentResponse(
     throw error;
   }
 }
+

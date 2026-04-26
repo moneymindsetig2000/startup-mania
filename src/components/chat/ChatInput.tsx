@@ -11,17 +11,23 @@ export const ChatInput = memo(function ChatInput({ onSend }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const rafRef = useRef<number>(0);
 
   const adjustHeight = useCallback(() => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      textarea.style.height = "60px";
+      const newHeight = Math.max(60, Math.min(textarea.scrollHeight, 200));
+      textarea.style.height = `${newHeight}px`;
+    });
   }, []);
 
   useEffect(() => {
     adjustHeight();
-  }, [value, adjustHeight]);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [adjustHeight]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -53,11 +59,14 @@ export const ChatInput = memo(function ChatInput({ onSend }: ChatInputProps) {
 
   return (
     <div className="w-full max-w-3xl mx-auto px-4 pb-6 pt-2">
-      <div className="relative flex flex-col gap-2 rounded-2xl border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 focus-within:border-white/20 focus-within:shadow-[0_8px_32px_rgba(255,255,255,0.05)]">
+      <div className="relative flex flex-col gap-2 rounded-2xl border border-white/10 bg-[#0d0d0d]/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all duration-300 focus-within:border-white/20 focus-within:shadow-[0_8px_32px_rgba(255,255,255,0.05)]">
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => {
+            setValue(e.target.value);
+            adjustHeight();
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Ask anything or type '/' for commands..."
           className="w-full resize-none bg-transparent px-5 py-4 text-[0.9rem] text-white placeholder:text-white/30 focus:outline-none min-h-[60px]"

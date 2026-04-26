@@ -19,14 +19,22 @@ export const AgentColumn = memo(function AgentColumn({ name, isActive, index, on
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    const scrollContainer = scrollRef.current;
+    if (!scrollContainer) return;
+
+    requestAnimationFrame(() => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const isAtBottom = scrollHeight - scrollTop <= clientHeight + 100;
+      
+      if (isAtBottom) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
+    });
   }, [messages]);
 
   return (
     <div 
-      className={`flex-1 min-w-[350px] flex flex-col relative group transition-all duration-500 ${
+      className={`flex-1 min-w-[350px] flex flex-col relative group transition-[filter] duration-500 ${
         !isActive ? "brightness-[0.4] grayscale-[0.2]" : "brightness-100"
       }`}
     >

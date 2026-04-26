@@ -67,6 +67,46 @@ export function ChatPage() {
     })
   }, [])
 
+  const pendingUpdates = useRef<{ [key: string]: string }>({});
+  const updateTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const flushUpdates = useCallback(() => {
+    const updates = { ...pendingUpdates.current };
+    if (Object.keys(updates).length === 0) return;
+    
+    // Clear the pending updates immediately so new chunks can be buffered
+    pendingUpdates.current = {};
+
+    setChatHistories(prev => {
+      const next = [...prev];
+      let hasChanged = false;
+
+      Object.entries(updates).forEach(([aiMessageId, chunk]) => {
+        // Find which agent this message belongs to
+        const agentIdx = next.findIndex(history => history.some(msg => msg.id === aiMessageId));
+        if (agentIdx !== -1) {
+          const history = [...next[agentIdx]];
+          const msgIdx = history.findIndex(msg => msg.id === aiMessageId);
+          if (msgIdx !== -1) {
+            history[msgIdx] = { 
+              ...history[msgIdx], 
+              content: history[msgIdx].content + chunk 
+            };
+            next[agentIdx] = history;
+            hasChanged = true;
+          }
+        }
+      });
+
+      if (hasChanged) {
+        return next;
+      }
+      return prev;
+    });
+  }, []);
+
+  const activeStreams = useRef(0);
+
   const handleSend = useCallback((text: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -74,40 +114,56 @@ export function ChatPage() {
       content: text,
     };
 
-    // Only add user message to active histories to keep them in sync with requests
-    setChatHistories(prev => prev.map((history, idx) => 
-      activeAgents[idx] ? [...history, userMessage] : history
-    ));
+    const newAiMessageIds: string[] = [];
 
-    // Real AI responses - ONLY for active agents
-    activeAgents.forEach((isActive, idx) => {
-      // VERIFIED: If agent is off, we return immediately and send NO request
-      if (!isActive) return;
-
-      const aiMessageId = (Date.now() + idx + 1).toString();
-      
-      // Initialize an empty AI message for the active agent
-      setChatHistories(prev => prev.map((history, i) => {
-        if (i !== idx) return history;
-        return [...history, { id: aiMessageId, role: "assistant", content: "" }];
-      }));
-
-      // Stream the response
-      generateAgentResponse(agentNames[idx], text, (chunk) => {
-        setChatHistories(prev => prev.map((history, i) => {
-          if (i !== idx) return history;
-          // Only update if the agent is STILL active (handles mid-stream toggles)
-          if (!activeAgents[i]) return history;
-          
-          return history.map(msg => 
-            msg.id === aiMessageId ? { ...msg, content: msg.content + chunk } : msg
-          );
-        }));
-      }).catch(err => {
-        console.error(`Failed to generate for ${agentNames[idx]}`, err);
+    // 1. Pure state update - NO SIDE EFFECTS inside
+    setChatHistories(prev => {
+      const next = [...prev];
+      activeAgents.forEach((isActive, idx) => {
+        if (isActive) {
+          const aiMessageId = (Date.now() + idx + 1).toString();
+          newAiMessageIds[idx] = aiMessageId;
+          next[idx] = [
+            ...next[idx], 
+            userMessage, 
+            { id: aiMessageId, role: "assistant", content: "" }
+          ];
+        }
       });
+      return next;
     });
-  }, [activeAgents, agentNames]);
+
+    // 2. Launch side effects (API streams) outside the React state cycle
+    activeAgents.forEach((isActive, idx) => {
+      if (isActive && newAiMessageIds[idx]) {
+        activeStreams.current++;
+        generateAgentResponse(agentNames[idx], text, (chunk) => {
+          pendingUpdates.current[newAiMessageIds[idx]] = (pendingUpdates.current[newAiMessageIds[idx]] || "") + chunk;
+          
+          if (!updateTimer.current) {
+            updateTimer.current = setInterval(flushUpdates, 120); // Optimized update rate
+          }
+        }).catch(err => {
+          console.error(`Failed to generate for ${agentNames[idx]}`, err);
+        }).finally(() => {
+          activeStreams.current--;
+          if (activeStreams.current === 0) {
+            flushUpdates();
+            if (updateTimer.current) {
+              clearInterval(updateTimer.current);
+              updateTimer.current = null;
+            }
+          }
+        });
+      }
+    });
+  }, [activeAgents, agentNames, flushUpdates]);
+
+  useEffect(() => {
+    return () => {
+      if (updateTimer.current) clearInterval(updateTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     let rafId: number
@@ -169,19 +225,19 @@ export function ChatPage() {
   }, [])
 
   if (isLoadingAuth) {
-    return <div className="min-h-screen bg-[#0a0a0a]" />
+    return <div className="h-screen bg-[#0a0a0a]" />
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white relative overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <ShaderAnimation />
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-xl" />
+    <div className="h-screen bg-[#0a0a0a] text-white relative overflow-hidden">
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <ShaderAnimation blur={true} />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
-      <div className="relative z-10 flex min-h-screen w-full flex-col gap-1 p-1">
+      <div className="relative z-10 flex h-screen w-full flex-col gap-1 p-1 overflow-hidden">
         <div
           ref={menuRef}
-          className="relative z-20 h-16 rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+          className="relative z-20 h-16 rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
         >
           <div className="flex h-full items-center justify-between px-3 sm:px-4">
             <div className="flex items-center gap-2">
@@ -207,7 +263,7 @@ export function ChatPage() {
                 <div
                   role="menu"
                   aria-hidden={!isMenuOpen}
-                  className={`absolute left-0 top-[calc(100%+0.6rem)] z-20 w-[176px] overflow-hidden rounded-[14px] border border-white/10 bg-[#0d0d0d]/95 p-1 shadow-[0_14px_36px_rgba(0,0,0,0.38)] backdrop-blur-xl transition-all duration-300 ease-out ${isMenuOpen
+                  className={`absolute left-0 top-[calc(100%+0.6rem)] z-20 w-[176px] overflow-hidden rounded-[14px] border border-white/10 bg-[#0d0d0d]/95 p-1 shadow-[0_14px_36px_rgba(0,0,0,0.38)] transition-all duration-300 ease-out ${isMenuOpen
                       ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
                       : "pointer-events-none -translate-y-2 scale-[0.98] opacity-0"
                     }`}
@@ -269,7 +325,7 @@ export function ChatPage() {
             style={{
               width: isCollapsed ? 0 : (typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${sidebarWidth}px` : '100%')
             }}
-            className={`will-change-[width,opacity] [contain:layout_paint] ease-in-out overflow-hidden rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${isCollapsed ? "opacity-0" : "opacity-100"} ${isResizing ? "" : "transition-[width,opacity] duration-300"}`}
+            className={`will-change-[width,opacity] [contain:layout_paint] ease-in-out overflow-hidden rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] ${isCollapsed ? "opacity-0" : "opacity-100"} ${isResizing ? "" : "transition-[width,opacity] duration-300"}`}
           >
             <SidebarContent />
           </aside>
@@ -283,7 +339,7 @@ export function ChatPage() {
             </div>
           )}
 
-          <main className="flex-1 flex flex-col [contain:layout_paint] rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden relative">
+          <main className="flex-1 flex flex-col [contain:layout_paint] rounded-[12px] border border-white/10 bg-[#0d0d0d]/80 shadow-[0_8px_32px_rgba(0,0,0,0.4)] overflow-hidden relative">
             <div className="flex flex-1 overflow-x-auto divide-x divide-white/10 custom-scrollbar pb-24">
               {activeAgents.map((isActive, index) => (
                 <AgentColumn
