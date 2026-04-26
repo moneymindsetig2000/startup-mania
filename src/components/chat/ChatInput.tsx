@@ -1,6 +1,7 @@
 import { useRef, useCallback, useState, useEffect, memo } from "react";
 import { Paperclip, ArrowUp, Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { streamEnhancedPrompt } from "@/lib/gemini";
 
 interface ChatInputProps {
   onSend?: (value: string) => void;
@@ -34,11 +35,20 @@ export const ChatInput = memo(function ChatInput({ onSend }: ChatInputProps) {
 
   const handleEnhance = async () => {
     if (!value.trim() || isEnhancing) return;
+    const originalValue = value;
     setIsEnhancing(true);
-    // Mocking AI enhancement delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setValue(prev => `Act as a senior startup consultant and ${prev}. Focus on scalability, market positioning, and technical feasibility. Provide a structured execution roadmap.`);
-    setIsEnhancing(false);
+    setValue(""); // Clear for streaming effect
+    
+    try {
+      await streamEnhancedPrompt(originalValue, (chunk) => {
+        setValue(prev => prev + chunk);
+      });
+    } catch (err) {
+      console.error("Enhancement failed:", err);
+      setValue(originalValue);
+    } finally {
+      setIsEnhancing(false);
+    }
   };
 
   return (

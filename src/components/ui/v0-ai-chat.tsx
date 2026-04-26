@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { streamEnhancedPrompt } from "@/lib/gemini";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -184,11 +185,21 @@ export function VercelV0Chat() {
 
     const handleEnhance = async () => {
         if (!value.trim() || isEnhancing) return;
+        const originalValue = value;
         setIsEnhancing(true);
-        // Mocking AI enhancement delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        setValue(prev => `Act as a senior startup consultant and ${prev}. Focus on scalability, market positioning, and technical feasibility. Provide a structured execution roadmap.`);
-        setIsEnhancing(false);
+        setValue(""); // Clear for streaming effect
+        
+        try {
+            await streamEnhancedPrompt(originalValue, (chunk) => {
+                setValue(prev => prev + chunk);
+                adjustHeight();
+            });
+        } catch (err) {
+            console.error("Enhancement failed:", err);
+            setValue(originalValue);
+        } finally {
+            setIsEnhancing(false);
+        }
     };
 
     return (

@@ -6,6 +6,7 @@ import { SidebarContent } from "@/components/layout/chat/SidebarContent"
 import { ChatInput } from "@/components/chat/ChatInput"
 import { AgentColumn, type Message } from "@/components/chat/AgentColumn"
 import { supabase } from "@/lib/supabase"
+import { generateAgentResponse } from "@/lib/gemini"
 
 export function ChatPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -73,32 +74,40 @@ export function ChatPage() {
       content: text,
     };
 
+    // Only add user message to active histories to keep them in sync with requests
     setChatHistories(prev => prev.map((history, idx) => 
       activeAgents[idx] ? [...history, userMessage] : history
     ));
 
-    // Simulate AI responses for active agents
-    setTimeout(() => {
-      setChatHistories(prev => prev.map((history, idx) => {
-        if (!activeAgents[idx]) return history;
-        
-        const aiResponses = [
-          `As ChatGPT, I've processed your prompt: "${text}". I can help you structure the codebase and implement the core logic with optimal design patterns.`,
-          `Gemini here. Analyzing "${text}" from a multi-modal perspective. I suggest focusing on high-performance rendering and a robust data pipeline.`,
-          `Claude reporting. Your request "${text}" is clear. I'll focus on the constitutional AI aspects, ensuring safety and high-integrity code generation.`,
-          `Grok active. Let's build this. "${text}" is a solid start. I'll provide the raw, unfiltered technical approach to maximize efficiency.`,
-          `GLM online. I've parsed "${text}". My recommendation is to optimize for large-scale bilingual support and efficient token utilization.`
-        ];
+    // Real AI responses - ONLY for active agents
+    activeAgents.forEach((isActive, idx) => {
+      // VERIFIED: If agent is off, we return immediately and send NO request
+      if (!isActive) return;
 
-        const aiMessage: Message = {
-          id: (Date.now() + idx + 1).toString(),
-          role: "assistant",
-          content: aiResponses[idx],
-        };
-        return [...history, aiMessage];
+      const aiMessageId = (Date.now() + idx + 1).toString();
+      
+      // Initialize an empty AI message for the active agent
+      setChatHistories(prev => prev.map((history, i) => {
+        if (i !== idx) return history;
+        return [...history, { id: aiMessageId, role: "assistant", content: "" }];
       }));
-    }, 1200);
-  }, [activeAgents]);
+
+      // Stream the response
+      generateAgentResponse(agentNames[idx], text, (chunk) => {
+        setChatHistories(prev => prev.map((history, i) => {
+          if (i !== idx) return history;
+          // Only update if the agent is STILL active (handles mid-stream toggles)
+          if (!activeAgents[i]) return history;
+          
+          return history.map(msg => 
+            msg.id === aiMessageId ? { ...msg, content: msg.content + chunk } : msg
+          );
+        }));
+      }).catch(err => {
+        console.error(`Failed to generate for ${agentNames[idx]}`, err);
+      });
+    });
+  }, [activeAgents, agentNames]);
 
   useEffect(() => {
     let rafId: number
