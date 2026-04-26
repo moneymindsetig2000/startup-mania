@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useRef, useEffect, useDeferredValue } from "react";
+import { memo, useMemo, useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { CodePreviewModal } from "./CodePreviewModal";
 
 interface ChatMessageProps {
   role: "user" | "assistant";
@@ -19,6 +20,8 @@ const rehypePlugins = [rehypeRaw];
 
 const CodeBlock = memo(function CodeBlock({ language, children }: { language: string, children: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const isHtml = language.toLowerCase() === "html" || language.toLowerCase() === "html5";
 
   useEffect(() => {
     const scrollContainer = scrollRef.current;
@@ -30,15 +33,31 @@ const CodeBlock = memo(function CodeBlock({ language, children }: { language: st
   }, [children]);
 
   return (
+    <>
     <div className="my-4 overflow-hidden rounded-lg border border-white/10 bg-black/20 shadow-inner">
       <div className="flex items-center justify-between bg-white/5 px-4 py-1.5 border-b border-white/10">
         <span className="text-[0.6rem] font-bold uppercase tracking-wider text-white/40">{language}</span>
-        <button 
-          onClick={() => navigator.clipboard.writeText(children)}
-          className="text-[0.6rem] font-bold uppercase tracking-wider text-white/20 hover:text-white/60 transition-colors"
-        >
-          Copy
-        </button>
+        <div className="flex items-center gap-3">
+          {isHtml && (
+            <button 
+              onClick={() => setIsPreviewOpen(true)}
+              className="flex items-center gap-1.5 text-[0.6rem] font-bold uppercase tracking-wider text-blue-400/80 hover:text-blue-300 transition-colors"
+              title="Live Preview"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              Preview
+            </button>
+          )}
+          <button 
+            onClick={() => navigator.clipboard.writeText(children)}
+            className="text-[0.6rem] font-bold uppercase tracking-wider text-white/20 hover:text-white/60 transition-colors"
+          >
+            Copy
+          </button>
+        </div>
       </div>
       <div 
         ref={scrollRef} 
@@ -59,6 +78,15 @@ const CodeBlock = memo(function CodeBlock({ language, children }: { language: st
         </SyntaxHighlighter>
       </div>
     </div>
+    
+    {isHtml && (
+      <CodePreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        htmlContent={children}
+      />
+    )}
+    </>
   );
 });
 
@@ -75,12 +103,11 @@ export const ChatMessage = memo(function ChatMessage({ role, content, name }: Ch
   // Throttled display content for heavy streaming
   const [throttledContent, setThrottledContent] = useState(mainContent);
   const lastUpdateRef = useRef(0);
-  const deferredContent = useDeferredValue(throttledContent);
 
   useEffect(() => {
     const now = Date.now();
     // If enough time has passed, update immediately
-    if (now - lastUpdateRef.current > 300) {
+    if (now - lastUpdateRef.current > 400) {
       setThrottledContent(mainContent);
       lastUpdateRef.current = now;
     } else {
@@ -88,7 +115,7 @@ export const ChatMessage = memo(function ChatMessage({ role, content, name }: Ch
       const timer = setTimeout(() => {
         setThrottledContent(mainContent);
         lastUpdateRef.current = Date.now();
-      }, 300);
+      }, 400);
       return () => clearTimeout(timer);
     }
   }, [mainContent]);
@@ -102,9 +129,9 @@ export const ChatMessage = memo(function ChatMessage({ role, content, name }: Ch
 
   // Pre-process content only when needed and on throttled content
   const processedMainContent = useMemo(() => {
-    if (!deferredContent.includes("==")) return deferredContent;
-    return deferredContent.replace(/==([^=]+)==/g, "<mark>$1</mark>");
-  }, [deferredContent]);
+    if (!throttledContent.includes("==")) return throttledContent;
+    return throttledContent.replace(/==([^=]+)==/g, "<mark>$1</mark>");
+  }, [throttledContent]);
 
   const components = useMemo(() => ({
     code({ node, inline, className, children, ...props }: any) {

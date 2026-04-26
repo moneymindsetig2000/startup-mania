@@ -116,17 +116,22 @@ export function ChatPage() {
 
     const newAiMessageIds: string[] = [];
 
+    // Pre-generate the message IDs synchronously so they are available for the streams
+    activeAgents.forEach((isActive, idx) => {
+      if (isActive) {
+        newAiMessageIds[idx] = (Date.now() + idx + 1).toString();
+      }
+    });
+
     // 1. Pure state update - NO SIDE EFFECTS inside
     setChatHistories(prev => {
       const next = [...prev];
       activeAgents.forEach((isActive, idx) => {
         if (isActive) {
-          const aiMessageId = (Date.now() + idx + 1).toString();
-          newAiMessageIds[idx] = aiMessageId;
           next[idx] = [
             ...next[idx], 
             userMessage, 
-            { id: aiMessageId, role: "assistant", content: "" }
+            { id: newAiMessageIds[idx], role: "assistant", content: "" }
           ];
         }
       });
