@@ -59,7 +59,9 @@ ${input}`,
 export async function generateAgentResponse(
   _agentName: string,
   userPrompt: string,
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  images?: { mimeType: string; data: string }[],
+  shouldStop?: () => boolean
 ) {
   const model = 'gemma-4-31b-it';
   const tools = [
@@ -68,14 +70,24 @@ export async function generateAgentResponse(
       }
     },
   ];
+
+  const contentParts: any[] = [{ text: userPrompt }];
+  
+  if (images && images.length > 0) {
+    images.forEach(img => {
+      contentParts.push({
+        inlineData: {
+          mimeType: img.mimeType,
+          data: img.data
+        }
+      });
+    });
+  }
+
   const contents = [
     {
       role: 'user',
-      parts: [
-        {
-          text: userPrompt,
-        },
-      ],
+      parts: contentParts,
     },
   ];
 
@@ -94,6 +106,8 @@ export async function generateAgentResponse(
     });
 
     for await (const chunk of response) {
+      if (shouldStop?.()) break;
+      
       // Extract thinking and text from the response parts
       const parts = (chunk as any).candidates?.[0]?.content?.parts;
       if (parts && Array.isArray(parts)) {

@@ -5,6 +5,7 @@ export interface Message {
   role: "user" | "assistant";
   content: string;
   id: string;
+  images?: { mimeType: string; data: string }[];
 }
 
 interface AgentColumnProps {
@@ -56,7 +57,7 @@ export const AgentColumn = memo(function AgentColumn({ name, isActive, index, on
       </div>
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto custom-scrollbar p-3 flex flex-col gap-4 scroll-smooth"
+        className="flex-1 overflow-y-auto custom-scrollbar px-3 pt-3 pb-36 flex flex-col gap-4 scroll-smooth"
       >
         {messages.map((msg) => (
           <ChatMessage 
@@ -64,6 +65,7 @@ export const AgentColumn = memo(function AgentColumn({ name, isActive, index, on
             role={msg.role} 
             content={msg.content} 
             name={name}
+            images={msg.images}
           />
         ))}
       </div>

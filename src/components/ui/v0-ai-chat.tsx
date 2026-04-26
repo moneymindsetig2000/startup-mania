@@ -14,8 +14,11 @@ import {
     ArrowUpIcon,
     Paperclip,
     Sparkles,
-    Loader2
+    Loader2,
+    X,
+    Brain
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface UseAutoResizeTextareaProps {
     minHeight: number;
@@ -146,41 +149,74 @@ export function VercelV0Chat() {
     
     const placeholderText = useTypewriter(prompts, 40, 1500);
     const [value, setValue] = useState("");
+    const [selectedImages, setSelectedImages] = useState<{ id: string; preview: string; base64: string; mimeType: string }[]>([]);
     const [isEnhancing, setIsEnhancing] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const { textareaRef, adjustHeight } = useAutoResizeTextarea({
         minHeight: 60,
         maxHeight: 200,
     });
 
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
+
+        const newImages = await Promise.all(files.map(async (file) => {
+            return new Promise<{ id: string; preview: string; base64: string; mimeType: string }>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = (reader.result as string).split(',')[1];
+                    resolve({
+                        id: Math.random().toString(36).substr(2, 9),
+                        preview: URL.createObjectURL(file),
+                        base64,
+                        mimeType: file.type
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        }));
+
+        setSelectedImages(prev => [...prev, ...newImages]);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+
+    const removeImage = (id: string) => {
+        setSelectedImages(prev => {
+            const filtered = prev.filter(img => img.id !== id);
+            const removed = prev.find(img => img.id === id);
+            if (removed) URL.revokeObjectURL(removed.preview);
+            return filtered;
+        });
+    };
+
+    const getFullPrompt = () => {
+        if (selectedImages.length === 0) return value.trim();
+        // For simple redirect, we might just pass the text, but the user wants images
+        // Since we are redirecting to /chat?prompt=..., passing full base64 images in URL is bad.
+        // We should store them in localStorage temporarily.
+        return value.trim();
+    };
+
+    const handleSendWithImages = () => {
+        if (value.trim() || selectedImages.length > 0) {
+            // Save images to localStorage for retrieval in ChatPage
+            if (selectedImages.length > 0) {
+                localStorage.setItem("pending_images", JSON.stringify(selectedImages.map(img => ({ mimeType: img.mimeType, data: img.base64 }))));
+            }
+            window.location.href = `/chat?prompt=${encodeURIComponent(value.trim())}`;
+        }
+    };
+
     const handleKeyDown = async (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            if (value.trim()) {
-                const { data: { session } } = await supabase.auth.getSession();
-                
-                if (session) {
-                    window.location.href = `/chat?prompt=${encodeURIComponent(value.trim())}`;
-                } else {
-                    // Save to local storage and redirect to auth
-                    localStorage.setItem("pending_prompt", value.trim());
-                    window.location.href = "/auth";
-                }
-            }
+            handleSendWithImages();
         }
     };
 
     const handleSend = async () => {
-        if (value.trim()) {
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (session) {
-                window.location.href = `/chat?prompt=${encodeURIComponent(value.trim())}`;
-            } else {
-                // Save to local storage and redirect to auth
-                localStorage.setItem("pending_prompt", value.trim());
-                window.location.href = "/auth";
-            }
-        }
+        handleSendWithImages();
     };
 
     const handleEnhance = async () => {
@@ -210,6 +246,28 @@ export function VercelV0Chat() {
 
             <div className="w-full">
                 <div className="relative bg-neutral-900 rounded-xl border border-neutral-800">
+                    <AnimatePresence>
+                        {selectedImages.length > 0 && (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 10, height: 0 }}
+                                animate={{ opacity: 1, y: 0, height: "auto" }}
+                                exit={{ opacity: 0, y: 10, height: 0 }}
+                                className="flex flex-wrap gap-2 px-4 pt-4 overflow-hidden"
+                            >
+                                {selectedImages.map((img) => (
+                                    <div key={img.id} className="relative group/thumb h-16 w-16 overflow-hidden rounded-lg border border-white/10 bg-white/5">
+                                        <img src={img.preview} alt="Preview" className="h-full w-full object-cover" />
+                                        <button 
+                                            onClick={() => removeImage(img.id)}
+                                            className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80"
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                     <div className="overflow-y-auto">
                         <Textarea
                             ref={textareaRef}
@@ -239,8 +297,17 @@ export function VercelV0Chat() {
 
                     <div className="flex items-center justify-between p-3">
                         <div className="flex items-center gap-2">
+                            <input 
+                                type="file" 
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                className="hidden"
+                                accept="image/*"
+                                multiple
+                            />
                             <button
                                 type="button"
+                                onClick={() => fileInputRef.current?.click()}
                                 className="group p-2 hover:bg-neutral-800 rounded-lg transition-colors flex items-center gap-1"
                             >
                                 <Paperclip className="w-4 h-4 text-white" />
@@ -273,7 +340,7 @@ export function VercelV0Chat() {
                                 onClick={handleSend}
                                 className={cn(
                                     "px-1.5 py-1.5 rounded-lg text-sm transition-colors border border-zinc-700 hover:border-zinc-600 hover:bg-zinc-800 flex items-center justify-between gap-1",
-                                    value.trim()
+                                    (value.trim() || selectedImages.length > 0)
                                         ? "bg-white text-black"
                                         : "text-zinc-400"
                                 )}

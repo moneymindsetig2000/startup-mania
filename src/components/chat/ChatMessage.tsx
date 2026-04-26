@@ -12,6 +12,7 @@ interface ChatMessageProps {
   role: "user" | "assistant";
   content: string;
   name?: string;
+  images?: { mimeType: string; data: string }[];
 }
 
 // Move plugins outside to avoid re-creation on every render
@@ -90,7 +91,7 @@ const CodeBlock = memo(function CodeBlock({ language, children }: { language: st
   );
 });
 
-export const ChatMessage = memo(function ChatMessage({ role, content, name }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ role, content, name, images }: ChatMessageProps) {
   const isUser = role === "user";
   const [isThoughtOpen, setIsThoughtOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -134,7 +135,7 @@ export const ChatMessage = memo(function ChatMessage({ role, content, name }: Ch
   }, [throttledContent]);
 
   const components = useMemo(() => ({
-    code({ node, inline, className, children, ...props }: any) {
+    code({ inline, className, children, ...props }: any) {
       const match = /language-(\w+)/.exec(className || "");
       const isBlock = !inline;
       
@@ -243,7 +244,7 @@ export const ChatMessage = memo(function ChatMessage({ role, content, name }: Ch
       )}
 
       {/* Main Message Content */}
-      {(processedMainContent || isUser) && (
+      {(processedMainContent || isUser || (images && images.length > 0)) && (
         <div
           className={cn(
             "max-w-[90%] rounded-2xl px-4 py-3 text-[0.85rem] leading-relaxed transition-all duration-300",
@@ -252,13 +253,30 @@ export const ChatMessage = memo(function ChatMessage({ role, content, name }: Ch
               : "bg-[#121212]/60 text-white/90 border border-white/5 shadow-[0_8px_24px_rgba(0,0,0,0.2)] rounded-tl-sm"
           )}
         >
-          <ReactMarkdown
-            remarkPlugins={remarkPlugins}
-            rehypePlugins={rehypePlugins}
-            components={components}
-          >
-            {processedMainContent}
-          </ReactMarkdown>
+          {images && images.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {images.map((img, i) => (
+                <div key={i} className="relative group/img overflow-hidden rounded-lg border border-white/10 bg-black/20">
+                   <img 
+                    src={`data:${img.mimeType};base64,${img.data}`} 
+                    alt={`Attachment ${i}`}
+                    className="max-h-[200px] w-auto object-contain transition-transform duration-500 group-hover/img:scale-105"
+                   />
+                </div>
+              ))}
+            </div>
+          )}
+          {processedMainContent ? (
+            <ReactMarkdown
+              remarkPlugins={remarkPlugins}
+              rehypePlugins={rehypePlugins}
+              components={components}
+            >
+              {processedMainContent}
+            </ReactMarkdown>
+          ) : isUser && !images?.length ? (
+            <span className="text-white/40 italic">Empty message</span>
+          ) : null}
         </div>
       )}
 

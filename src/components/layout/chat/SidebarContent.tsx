@@ -1,11 +1,58 @@
-import { memo } from "react"
-import { Plus, Search, Settings } from "lucide-react"
+import { memo, useState, useEffect, useCallback, useRef } from "react"
+import { Plus, Search, Settings, MoreVertical, Edit3, Trash2 } from "lucide-react"
+import { ProjectActionModal } from "@/components/chat/ProjectActionModal"
+import { motion, AnimatePresence } from "framer-motion"
 
-export const SidebarContent = memo(function SidebarContent() {
+interface Project {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+interface SidebarContentProps {
+  onOpenSettings?: () => void;
+  projects: Project[];
+  activeProjectId: string | null;
+  onProjectSelect: (id: string) => void;
+  onNewProject: () => void;
+  onRenameProject: (id: string, newName: string) => void;
+  onDeleteProject: (id: string) => void;
+}
+
+export const SidebarContent = memo(function SidebarContent({ 
+  onOpenSettings, 
+  projects, 
+  activeProjectId, 
+  onProjectSelect, 
+  onNewProject,
+  onRenameProject,
+  onDeleteProject
+}: SidebarContentProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; type: "rename" | "delete"; project: Project | null }>({
+    isOpen: false,
+    type: "rename",
+    project: null
+  });
+
+  const filteredProjects = projects.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="flex h-full flex-col p-2 min-w-[200px] [contain:content]">
       {/* New Project Button */}
-      <button className="group flex items-center justify-between w-full p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 active:scale-[0.98]">
+      <button 
+        onClick={onNewProject}
+        className="group flex items-center justify-between w-full p-3 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all duration-300 active:scale-[0.98]"
+      >
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.2)]">
             <Plus className="h-4 w-4" />
@@ -22,6 +69,8 @@ export const SidebarContent = memo(function SidebarContent() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white/30 group-focus-within:text-white/60 transition-colors" />
         <input 
           type="text" 
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search projects..." 
           className="w-full h-10 pl-9 pr-4 rounded-xl bg-white/[0.02] border border-white/5 text-[0.8rem] text-white/70 placeholder:text-white/20 focus:outline-none focus:bg-white/[0.05] focus:border-white/10 transition-all duration-300"
         />
@@ -33,22 +82,115 @@ export const SidebarContent = memo(function SidebarContent() {
           <div className="px-2 mb-2">
             <span className="text-[0.6rem] font-black text-white/20 uppercase tracking-[0.2em]">Recent Activity</span>
           </div>
-          {/* Empty State placeholder */}
-          <div className="flex flex-col items-center justify-center py-8 px-4 rounded-xl border border-dashed border-white/5 bg-white/[0.01]">
-            <span className="text-[0.7rem] text-white/20 font-medium text-center italic">No recent projects to show</span>
-          </div>
+          
+          {filteredProjects.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 px-4 rounded-xl border border-dashed border-white/5 bg-white/[0.01]">
+              <span className="text-[0.7rem] text-white/20 font-medium text-center italic">No projects found</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1">
+              {filteredProjects.map(project => (
+                <div key={project.id} className="relative group">
+                  <button
+                    onClick={() => onProjectSelect(project.id)}
+                    className={`flex items-center justify-between w-full p-2.5 rounded-xl transition-all duration-300 ${
+                      activeProjectId === project.id 
+                        ? "bg-white/10 text-white shadow-lg border border-white/5" 
+                        : "text-white/40 hover:bg-white/5 hover:text-white/60"
+                    }`}
+                  >
+                    <span className="text-[0.82rem] font-semibold tracking-tight truncate mr-2">{project.name}</span>
+                    
+                    {/* Action Menu Trigger */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setMenuOpenId(menuOpenId === project.id ? null : project.id);
+                      }}
+                      className={`p-1.5 rounded-lg hover:bg-white/10 transition-all ${
+                        menuOpenId === project.id ? "opacity-100 bg-white/10" : "opacity-0 group-hover:opacity-100"
+                      }`}
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <AnimatePresence>
+                    {menuOpenId === project.id && (
+                      <>
+                        <div 
+                          className="fixed inset-0 z-40" 
+                          onClick={() => setMenuOpenId(null)}
+                        />
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                          className="absolute right-0 top-full mt-1 z-50 w-40 rounded-xl border border-white/10 bg-[#121212] shadow-2xl overflow-hidden p-1"
+                        >
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setModalConfig({ isOpen: true, type: "rename", project });
+                            }}
+                            className="flex items-center gap-2 w-full p-2 rounded-lg text-[0.75rem] font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                            Rename
+                          </button>
+                          <button
+                            onClick={() => {
+                              setMenuOpenId(null);
+                              setModalConfig({ isOpen: true, type: "delete", project });
+                            }}
+                            className="flex items-center gap-2 w-full p-2 rounded-lg text-[0.75rem] font-bold text-red-400/60 hover:text-red-400 hover:bg-red-500/10 transition-all"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            Delete
+                          </button>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Settings Section (Bottom) */}
       <div className="mt-auto pt-2 border-t border-white/5">
-        <button className="flex items-center gap-3 w-full p-2.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all duration-300 group">
+        <button 
+          onClick={onOpenSettings}
+          className="flex items-center gap-3 w-full p-2.5 rounded-xl text-white/50 hover:text-white hover:bg-white/5 transition-all duration-300 group"
+        >
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5 group-hover:bg-white/10 transition-colors">
             <Settings className="h-4 w-4" />
           </div>
           <span className="text-[0.82rem] font-semibold tracking-tight">Settings</span>
         </button>
       </div>
+
+      <AnimatePresence>
+        {modalConfig.isOpen && (
+          <ProjectActionModal
+            isOpen={modalConfig.isOpen}
+            type={modalConfig.type}
+            projectName={modalConfig.project?.name || ""}
+            onClose={() => setModalConfig(prev => ({ ...prev, isOpen: false }))}
+            onConfirm={(newName) => {
+              if (modalConfig.type === "rename" && modalConfig.project && newName) {
+                onRenameProject(modalConfig.project.id, newName);
+              } else if (modalConfig.type === "delete" && modalConfig.project) {
+                onDeleteProject(modalConfig.project.id);
+              }
+              setModalConfig(prev => ({ ...prev, isOpen: false }));
+            }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 })
