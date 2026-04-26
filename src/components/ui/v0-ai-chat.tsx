@@ -137,14 +137,14 @@ function useTypewriter(prompts: string[], speed = 40, delay = 1500) {
 
 export function VercelV0Chat() {
     const prompts = useMemo(() => [
-        "Design a landing page for a SaaS startup...",
-        "Build a sleek dashboard UI with dark mode...",
-        "Create a modern login form with glassmorphism...",
-        "Design a minimalist portfolio for a designer...",
-        "Build a beautiful pricing section with toggle...",
-        "Create a responsive navigation bar with blur...",
-        "Design a high-converting hero section...",
-        "What can I help you design today?"
+        "Landing page for a SaaS startup...",
+        "Dashboard for analytics...",
+        "Sign up form with validation...",
+        "Portfolio for a developer...",
+        "Pricing section for SaaS...",
+        "Navigation bar for mobile...",
+        "Hero section for agency...",
+        "What can I help you ship today?"
     ], []);
     
     const placeholderText = useTypewriter(prompts, 40, 1500);
@@ -361,24 +361,44 @@ export function VercelV0Chat() {
 
                 <div className="flex items-center justify-center gap-3 mt-4">
                     <ActionButton
-                        icon={<ImageIcon className="w-4 h-4" />}
-                        label="Clone a Screenshot"
+                        icon={<MonitorIcon className="w-4 h-4" />}
+                        label="Landing Page"
+                        onClick={() => {
+                            setValue("Create a high-converting landing page for a SaaS startup with modern aesthetics.");
+                            setTimeout(adjustHeight, 0);
+                        }}
                     />
                     <ActionButton
                         icon={<Layout className="w-4 h-4" />}
-                        label="Import from Figma"
-                    />
-                    <ActionButton
-                        icon={<FileUp className="w-4 h-4" />}
-                        label="Upload a Project"
-                    />
-                    <ActionButton
-                        icon={<MonitorIcon className="w-4 h-4" />}
-                        label="Landing Page"
+                        label="Dashboard"
+                        onClick={() => {
+                            setValue("Design a sleek analytics dashboard with dark mode and real-time data visualizations.");
+                            setTimeout(adjustHeight, 0);
+                        }}
                     />
                     <ActionButton
                         icon={<CircleUserRound className="w-4 h-4" />}
                         label="Sign Up Form"
+                        onClick={() => {
+                            setValue("Build a modern sign-up form with glassmorphism and client-side validation.");
+                            setTimeout(adjustHeight, 0);
+                        }}
+                    />
+                    <ActionButton
+                        icon={<ImageIcon className="w-4 h-4" />}
+                        label="Portfolio"
+                        onClick={() => {
+                            setValue("Create a minimalist developer portfolio showcasing projects and skills.");
+                            setTimeout(adjustHeight, 0);
+                        }}
+                    />
+                    <ActionButton
+                        icon={<FileUp className="w-4 h-4" />}
+                        label="Pricing Section"
+                        onClick={() => {
+                            setValue("Design a beautiful pricing section with three tiers and a monthly/yearly toggle.");
+                            setTimeout(adjustHeight, 0);
+                        }}
                     />
                 </div>
             </div>
@@ -389,13 +409,15 @@ export function VercelV0Chat() {
 interface ActionButtonProps {
     icon: React.ReactNode;
     label: string;
+    onClick?: () => void;
 }
 
-function ActionButton({ icon, label }: ActionButtonProps) {
+function ActionButton({ icon, label, onClick }: ActionButtonProps) {
     return (
         <button
             type="button"
-            className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 rounded-full border border-neutral-800 text-neutral-400 hover:text-white transition-colors"
+            onClick={onClick}
+            className="flex items-center gap-2 px-4 py-2 bg-neutral-900 hover:bg-neutral-800 rounded-full border border-neutral-800 text-neutral-400 hover:text-white transition-all active:scale-95"
         >
             {icon}
             <span className="text-xs">{label}</span>

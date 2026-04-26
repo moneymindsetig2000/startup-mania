@@ -83,13 +83,13 @@ export function Header() {
           
           <nav className="hidden md:flex items-center gap-8">
             {["Features", "Showcase", "Pricing", "About"].map((item) => (
-              <a
+              <button
                 key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-sm font-medium text-white/70 hover:text-white transition-colors drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                onClick={() => window.location.pathname = `/${item.toLowerCase()}`}
+                className="text-sm font-medium text-white/70 hover:text-white transition-colors cursor-pointer drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
               >
                 {item}
-              </a>
+              </button>
             ))}
           </nav>
 

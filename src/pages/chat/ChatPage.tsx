@@ -7,10 +7,31 @@ import { ChatInput } from "@/components/chat/ChatInput"
 import { AgentColumn, type Message } from "@/components/chat/AgentColumn"
 import { DeepReasonView } from "@/components/chat/DeepReasonView"
 import { SettingsModal } from "@/components/chat/SettingsModal"
+import { ExportGuideModal } from "@/components/chat/ExportGuideModal"
 import { supabase } from "@/lib/supabase"
 import { generateAgentResponse } from "@/lib/gemini"
 
+const FigmaIconHeader = () => (
+  <svg width="12" height="18" viewBox="0 0 38 57" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19 28.5C19 25.9834 20.0009 23.5699 21.7825 21.7883C23.5641 20.0067 25.9775 19 28.5 19C31.0225 19 33.4359 20.0067 35.2175 21.7883C36.9991 23.5699 38 25.9834 38 28.5C38 31.0166 36.9991 33.4301 35.2175 35.2117C33.4359 36.9933 31.0225 38 28.5 38C25.9775 38 23.5641 36.9933 21.7825 35.2117C20.0009 33.4301 19 31.0166 19 28.5Z" fill="#1ABCFE"/>
+    <path d="M0 47.5C0 44.9834 1.00089 42.5699 2.78249 40.7883C4.56408 39.0067 6.97754 38 9.5 38H19V47.5C19 50.0166 17.9991 52.4301 16.2175 54.2117C14.4359 55.9933 12.0225 57 9.5 57C6.97754 57 4.56408 55.9933 2.78249 54.2117C1.00089 52.4301 0 50.0166 0 47.5Z" fill="#0AC17D"/>
+    <path d="M0 28.5C0 25.9834 1.00089 23.5699 2.78249 21.7883C4.56408 20.0067 6.97754 19 9.5 19H19V38H9.5C6.97754 38 4.56408 36.9933 2.78249 35.2117C20.0009 33.4301 0 31.0166 0 28.5Z" fill="#A259FF"/>
+    <path d="M0 9.5C0 6.98342 1.00089 4.56994 2.78249 2.78835C4.56408 1.00676 6.97754 0 9.5 0H19V19H9.5C6.97754 19 4.56408 17.9932 2.78249 16.2117C1.00089 14.4301 0 12.0166 0 9.5Z" fill="#F24E1E"/>
+    <path d="M19 0H28.5C31.0225 0 33.4359 1.00676 35.2175 2.78835C36.9991 4.56994 38 6.98342 38 9.5C38 12.0166 36.9991 14.4301 35.2175 16.2117C33.4359 17.9932 31.0225 19 28.5 19H19V0Z" fill="#FF7262"/>
+  </svg>
+)
+
+const FramerIconHeader = () => (
+  <svg width="12" height="18" viewBox="0 0 14 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 0H14V7H7L0 0Z" fill="white"/>
+    <path d="M0 7H14V14H0V7Z" fill="white"/>
+    <path d="M0 14H7V21L0 14Z" fill="white"/>
+  </svg>
+)
+
 export function ChatPage() {
+  const [showExportGuide, setShowExportGuide] = useState(false)
+  const [exportGuideTab, setExportGuideTab] = useState<"figma" | "framer">("figma")
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isDeepReasonMode, setIsDeepReasonMode] = useState(false)
@@ -75,6 +96,21 @@ export function ChatPage() {
   useEffect(() => {
     localStorage.setItem("startup_mania_projects", JSON.stringify(projects))
   }, [projects])
+
+  // Ensure at least one project exists
+  useEffect(() => {
+    if (projects.length === 0) {
+      const defaultProject = {
+        id: Date.now().toString(),
+        name: "New Chat",
+        createdAt: Date.now()
+      }
+      setProjects([defaultProject])
+      setActiveProjectId(defaultProject.id)
+    } else if (!activeProjectId) {
+      setActiveProjectId(projects[0].id)
+    }
+  }, [projects, activeProjectId])
 
   // 3. Persist Active Project ID
   useEffect(() => {
@@ -513,6 +549,30 @@ export function ChatPage() {
                 </span>
               </button>
             </div>
+
+            {/* Export Buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setExportGuideTab("figma");
+                  setShowExportGuide(true);
+                }}
+                className="group flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 transition-all duration-300 hover:bg-white/10 hover:border-white/20 active:scale-95"
+              >
+                <FigmaIconHeader />
+                <span className="text-xs font-bold text-white/60 transition-colors group-hover:text-white">To Figma</span>
+              </button>
+              <button
+                onClick={() => {
+                  setExportGuideTab("framer");
+                  setShowExportGuide(true);
+                }}
+                className="group flex h-9 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 transition-all duration-300 hover:bg-white/10 hover:border-white/20 active:scale-95"
+              >
+                <FramerIconHeader />
+                <span className="text-xs font-bold text-white/60 transition-colors group-hover:text-white">To Framer</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -583,6 +643,12 @@ export function ChatPage() {
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         onLogout={() => setShowLogoutConfirm(true)}
+      />
+
+      <ExportGuideModal
+        isOpen={showExportGuide}
+        onClose={() => setShowExportGuide(false)}
+        initialTab={exportGuideTab}
       />
 
       {/* Logout Confirmation Modal */}
