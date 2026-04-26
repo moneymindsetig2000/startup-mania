@@ -3,18 +3,22 @@ import { ShaderAnimation } from "@/components/ui/shader-animation";
 import { ArrowLeft, Check, Zap, Package, Download, Layers, Layout, Terminal, Rocket, BrainCircuit } from "lucide-react";
 
 export function PricingPage() {
-  const plans: Array<{
+  interface PlanFeature {
+    text: string;
+    icon: React.ReactNode;
+    highlight?: boolean;
+  }
+
+  interface Plan {
     name: string;
     price: string;
     period: string;
     description: string;
     popular?: boolean;
-    features: Array<{
-      text: string;
-      icon: React.ReactNode;
-      highlight?: boolean;
-    }>;
-  }> = [
+    features: PlanFeature[];
+  }
+
+  const plans: Plan[] = [
     {
       name: "Base",
       price: "$0",

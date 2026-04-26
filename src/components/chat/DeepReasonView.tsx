@@ -1,7 +1,6 @@
 import { memo, useEffect, useRef } from "react";
 import { ChatMessage } from "./ChatMessage";
 import { type Message } from "./AgentColumn";
-import { motion } from "framer-motion";
 import { Brain, Sparkles } from "lucide-react";
 
 interface DeepReasonViewProps {

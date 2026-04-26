@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ThumbsUp, ThumbsDown, Copy, CheckCircle2, ArrowRight } from "lucide-react";
+import { X, ThumbsUp, ThumbsDown, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const FigmaIcon = () => (

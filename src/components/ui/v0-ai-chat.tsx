@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
-import { supabase } from "@/lib/supabase";
 import { streamEnhancedPrompt } from "@/lib/gemini";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -15,8 +14,7 @@ import {
     Paperclip,
     Sparkles,
     Loader2,
-    X,
-    Brain
+    X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -190,13 +188,7 @@ export function VercelV0Chat() {
         });
     };
 
-    const getFullPrompt = () => {
-        if (selectedImages.length === 0) return value.trim();
-        // For simple redirect, we might just pass the text, but the user wants images
-        // Since we are redirecting to /chat?prompt=..., passing full base64 images in URL is bad.
-        // We should store them in localStorage temporarily.
-        return value.trim();
-    };
+
 
     const handleSendWithImages = () => {
         if (value.trim() || selectedImages.length > 0) {

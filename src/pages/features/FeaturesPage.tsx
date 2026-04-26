@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ShaderAnimation } from "@/components/ui/shader-animation";
-import { ArrowLeft, Zap, Package, Download, Layers, Layout, Terminal, Rocket, BrainCircuit } from "lucide-react";
+import { ArrowLeft, Zap, Download, Layers, Terminal, Rocket, BrainCircuit } from "lucide-react";
 
 export function FeaturesPage() {
   const features = [

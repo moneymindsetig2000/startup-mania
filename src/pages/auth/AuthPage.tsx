@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Rocket, Mail, Lock, User, Loader2, ArrowRight, ShieldCheck, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { ShaderAnimation } from "@/components/ui/shader-animation";
 
 export function AuthPage() {
@@ -37,7 +36,7 @@ export function AuthPage() {
         if (error) throw error;
       } else {
         // Sign Up
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback, useRef } from "react"
+import { memo, useState } from "react"
 import { Plus, Search, Settings, MoreVertical, Edit3, Trash2 } from "lucide-react"
 import { ProjectActionModal } from "@/components/chat/ProjectActionModal"
 import { motion, AnimatePresence } from "framer-motion"

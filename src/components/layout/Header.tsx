@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Rocket, LogOut, ChevronDown, LayoutDashboard, User } from "lucide-react";
+import { Rocket, LogOut, ChevronDown, LayoutDashboard } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
