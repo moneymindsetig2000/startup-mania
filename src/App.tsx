@@ -34,7 +34,7 @@ function App() {
         <footer className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/10 bg-black/80 backdrop-blur-xl py-4">
           <div className="container mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-white/40 text-xs font-medium">
-              &copy; {new Date().getFullYear()} Pixora (Startup Mania). All rights reserved.
+              &copy; {new Date().getFullYear()} Pixora. All rights reserved.
             </p>
             <div className="flex items-center gap-6">
               <button 

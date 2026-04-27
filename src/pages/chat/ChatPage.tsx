@@ -485,7 +485,7 @@ export function ChatPage() {
                     <Rocket className="h-4 w-4" />
                   </span>
                   <span className="text-[0.82rem] font-semibold tracking-[0.16em] text-white uppercase">
-                    Startup Mania
+                    Pixora
                   </span>
                   <span className="flex h-6 w-6 items-center justify-center text-white/70 transition-transform duration-300 group-hover:translate-y-[1px]">
                     <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${isMenuOpen ? "rotate-180" : ""}`} />

@@ -23,7 +23,7 @@ export function PricingPage() {
       name: "Base",
       price: "$0",
       period: "/forever",
-      description: "Perfect for exploring the core capabilities of Startup Mania.",
+      description: "Perfect for exploring the core capabilities of Pixora.",
       features: [
         { text: "5 Requests per day", icon: <Zap className="w-4 h-4" /> },
         { text: "Standard Generation", icon: <Package className="w-4 h-4" /> },

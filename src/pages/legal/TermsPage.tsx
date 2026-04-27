@@ -32,7 +32,7 @@ export function TermsPage() {
           <div className="space-y-10 text-white/60 font-light leading-relaxed text-lg">
             <section className="p-8 rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-md">
               <h2 className="text-2xl font-bold text-white mb-4 tracking-tight">1. Acceptance of Terms</h2>
-              <p>By accessing Pixora (Startup Mania), the Neural-Aesthetic Engine developed for the Keystone College of Engineering, you agree to abide by these terms. This platform bridges abstract human creativity and production-grade frontend architecture.</p>
+              <p>By accessing Pixora, the Neural-Aesthetic Engine developed for the Keystone College of Engineering, you agree to abide by these terms. This platform bridges abstract human creativity and production-grade frontend architecture.</p>
             </section>
             
             <section className="p-8 rounded-[32px] border border-white/10 bg-white/5 backdrop-blur-md">

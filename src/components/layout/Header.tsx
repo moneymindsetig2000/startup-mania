@@ -78,7 +78,7 @@ export function Header() {
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center">
               <Rocket className="text-black w-6 h-6" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-white uppercase">Startup Mania</span>
+            <span className="text-xl font-bold tracking-tight text-white uppercase">Pixora</span>
           </div>
           
           <nav className="hidden md:flex items-center gap-8">
